@@ -50,7 +50,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             # Pindah ke direktori aplikasi (asumsikan Anda sudah clone repo di sana)
-            cd ~/apps.simantap/stmadb-portal 
+            cd ~/stmadb-portal 
 
             # Pull image backend terbaru dari Docker Hub
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/stmadb-portal-be:latest
