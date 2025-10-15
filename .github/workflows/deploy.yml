@@ -49,17 +49,17 @@ jobs:
           password: ${{ secrets.SSH_PASS }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            # Pindah ke direktori aplikasi (asumsikan Anda sudah clone repo di sana)
+            # 1. Login ke Docker Hub di server Anda
+            echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+
+            # 2. Pindah ke direktori proyek
             cd ~/stmadb-portal 
+            
+            # 3. Ambil perubahan terbaru dari Git (termasuk docker-compose.yml)
+            git pull
 
-            # Pull image backend terbaru dari Docker Hub
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/stmadb-portal-be:latest
-
-            # Pull image frontend terbaru dari Docker Hub
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/stmadb-portal-fe:latest
-
-            # Jalankan ulang container dengan gambar baru
+            # 4. Jalankan ulang. Docker-compose akan otomatis pull image baru.
             docker-compose up -d --remove-orphans
 
-            # Hapus image lama yang tidak terpakai
+            # 5. Bersihkan image lama
             docker image prune -f
