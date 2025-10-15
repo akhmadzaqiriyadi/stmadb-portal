@@ -1,5 +1,5 @@
 # Stage 1: Build Stage
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 RUN npm run build
 
 # Stage 2: Production Stage
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
