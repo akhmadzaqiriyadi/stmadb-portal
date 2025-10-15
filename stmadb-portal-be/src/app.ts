@@ -13,8 +13,23 @@ import { swaggerSpec } from './core/config/swagger.js'; // Tambahkan .js
 const app: Express = express();
 
 // Konfigurasi CORS
+// Daftar domain yang diizinkan untuk mengakses API
+const allowedOrigins = [
+  'http://localhost:3000',      
+  'https://stmadb-portal-fe.vercel.app',           // Untuk development frontend lokal
+  'http://simantap.smkn1adw.sch.id:3000', // Domain produksi Anda dengan port
+  'http://simantap.smkn1adw.sch.id'       // Domain produksi Anda tanpa port (jika nanti pakai Nginx)
+];
+
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Izinkan jika origin ada di dalam daftar putih, atau jika origin tidak ada (misalnya dari Postman/curl)
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Akses ditolak oleh kebijakan CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
