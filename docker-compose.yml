@@ -1,34 +1,63 @@
+# Gunakan file ini sebagai docker-compose.yml di root proyek Anda
+
 version: '3.8'
 
 services:
+  # 1. SERVICE DATABASE (POSTGRESQL)
+  # Service ini akan otomatis men-download image PostgreSQL,
+  # membuat database dan user sesuai environment.
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: stmadb_db
+    environment:
+      POSTGRES_USER: zaqi
+      POSTGRES_PASSWORD: "Randusari24" # Ganti dengan password yang lebih aman di production
+      POSTGRES_DB: stmadb_portal
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Agar data tidak hilang saat container mati
+    networks:
+      - stmadb-net
+    restart: unless-stopped
+
+  # 2. SERVICE BACKEND (EXPRESS.JS)
+  # Service ini akan terhubung ke 'postgres-db'
   backend:
-    image: akhmadzaqiriyadi/stmadb-portal-be:latest # Ganti dengan username Docker Hub Anda
+    image: akhmadzaqiriyadi/stmadb-portal-be:latest
     build:
       context: ./stmadb-portal-be
       dockerfile: Dockerfile
     container_name: stmadb_be
     ports:
-      - "8000:8000" # Map port 8000 host ke 8000 container
+      - "8000:8000"
     env_file:
-      - ./stmadb-portal-be/.env # Path ke file .env backend
+      - ./stmadb-portal-be/.env
     restart: unless-stopped
     networks:
       - stmadb-net
+    depends_on: # Menunggu database siap sebelum backend dijalankan
+      - postgres-db
 
+  # 3. SERVICE FRONTEND (NEXT.JS)
+  # Service ini akan berkomunikasi dengan backend melalui port 8000
   frontend:
-    image: akhmadzaqiriyadi/stmadb-portal-be:latest # Ganti dengan username Docker Hub Anda
+    image: akhmadzaqiriyadi/stmadb-portal-fe:latest # <-- Nama image sudah diperbaiki
     build:
       context: ./stmadb-portal-fe
       dockerfile: Dockerfile
     container_name: stmadb_fe
     ports:
-      - "3000:3000" # Map port 3000 host ke 3000 container
+      - "3000:3000"
     env_file:
-      - ./stmadb-portal-fe/.env # Path ke file .env frontend
+      - ./stmadb-portal-fe/.env
     restart: unless-stopped
     networks:
       - stmadb-net
 
+# Jaringan custom agar container bisa saling berkomunikasi menggunakan nama service
 networks:
   stmadb-net:
     driver: bridge
+
+# Volume untuk menyimpan data database secara permanen
+volumes:
+  postgres_data:

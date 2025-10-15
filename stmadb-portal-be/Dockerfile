@@ -2,39 +2,31 @@
 FROM node:20-alpine AS builder
 
 WORKDIR /app
-
-# Copy package files and install dependencies
 COPY package*.json ./
 RUN npm install
-
-# Copy the rest of the application code
 COPY . .
-
-# Generate Prisma Client
 RUN npx prisma generate
-
-# (Opsional) Jika Anda menggunakan TypeScript, tambahkan build step
-# RUN npm run build  <-- Jika Anda punya script build untuk transpile TS ke JS
 
 # Stage 2: Production Stage
 FROM node:20-alpine
 
 WORKDIR /app
-
-# Copy dependencies from builder stage
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
-
-# Copy compiled code and prisma schema
 COPY --from=builder /app/src ./src
 COPY --from=builder /app/prisma ./prisma
 
-# Expose the port the app runs on
+# ---- PERUBAHAN DI SINI ----
+# Salin entrypoint script ke dalam image
+COPY ./entrypoint.sh .
+# Jadikan script tersebut executable
+RUN chmod +x ./entrypoint.sh
+
 EXPOSE 8000  
 
+# Tetapkan entrypoint script sebagai perintah yang akan dijalankan pertama kali
+ENTRYPOINT ["./entrypoint.sh"]
 
-# Command to run the application
-# Karena Anda menggunakan ts-node di dev, pastikan cara run di prod sudah benar
-# Idealnya, Anda build TS ke JS dulu. Tapi untuk simpelnya, kita bisa pakai ts-node langsung.
-# Untuk production sejati, sangat disarankan untuk build ke JS.
-CMD [ "node", "--loader", "ts-node/esm", "src/index.ts" ]
+# Perintah ini akan dijalankan oleh entrypoint script (via exec "$@")
+# Menggunakan npm script yang sudah kita definisikan
+CMD [ "npm", "run", "start" ]
