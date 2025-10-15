@@ -3,7 +3,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  // Hapus "_BASE" dari nama variabel
+  baseURL: process.env.NEXT_PUBLIC_API_URL, 
 });
 
 // Nanti kita akan tambahkan interceptor di sini untuk token JWT
