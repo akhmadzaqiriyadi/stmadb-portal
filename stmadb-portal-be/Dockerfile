@@ -1,43 +1,40 @@
-# File: stmadb-portal-be/Dockerfile
+# Stage 1: Build Stage
+FROM node:20-alpine AS builder
 
-# --- Tahap 1: Build (Membangun Aplikasi) ---
-# Kita gunakan image Node.js versi 18-alpine sebagai dasar
-FROM node:18-alpine AS builder
-
-# Tentukan direktori kerja di dalam container
 WORKDIR /app
 
-# Salin file package.json dan package-lock.json terlebih dahulu
+# Copy package files and install dependencies
 COPY package*.json ./
-
-# Install semua dependencies
 RUN npm install
 
-# Salin semua sisa kode proyek
+# Copy the rest of the application code
 COPY . .
 
-# Jalankan build script untuk mengkompilasi TypeScript ke JavaScript
-RUN npm run build
-
-
-# --- Tahap 2: Produksi (Menjalankan Aplikasi) ---
-# Kita mulai lagi dari image yang sama dan bersih untuk hasil yang lebih kecil
-FROM node:18-alpine
-WORKDIR /app
-
-# Salin hanya file yang dibutuhkan dari tahap 'builder'
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
-
-# Set environment ke produksi
-ENV NODE_ENV=production
-
-# Generate Prisma Client di dalam container produksi. Ini penting!
+# Generate Prisma Client
 RUN npx prisma generate
 
-# Buka port 8080 agar bisa diakses dari luar container
-EXPOSE 8080
+# (Opsional) Jika Anda menggunakan TypeScript, tambahkan build step
+# RUN npm run build  <-- Jika Anda punya script build untuk transpile TS ke JS
 
-# Perintah default untuk menjalankan aplikasi saat container dimulai
-CMD ["node", "dist/index.js"]
+# Stage 2: Production Stage
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy dependencies from builder stage
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+
+# Copy compiled code and prisma schema
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/prisma ./prisma
+
+# Expose the port the app runs on
+EXPOSE 8000  
+
+
+# Command to run the application
+# Karena Anda menggunakan ts-node di dev, pastikan cara run di prod sudah benar
+# Idealnya, Anda build TS ke JS dulu. Tapi untuk simpelnya, kita bisa pakai ts-node langsung.
+# Untuk production sejati, sangat disarankan untuk build ke JS.
+CMD [ "node", "--loader", "ts-node/esm", "src/index.ts" ]

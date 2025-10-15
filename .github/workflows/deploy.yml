@@ -1,0 +1,65 @@
+name: Build and Deploy STMADB Portal
+
+on:
+  push:
+    branches:
+      - main # Hanya berjalan saat ada push ke branch main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./stmadb-portal-be
+          file: ./stmadb-portal-be/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/stmadb-portal-be:latest
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./stmadb-portal-fe
+          file: ./stmadb-portal-fe/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/stmadb-portal-fe:latest
+
+  deploy:
+    needs: build-and-push # Jalankan job ini setelah build-and-push selesai
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASS }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            # Pindah ke direktori aplikasi (asumsikan Anda sudah clone repo di sana)
+            cd ~/apps.simantap/stmadb-portal 
+
+            # Pull image backend terbaru dari Docker Hub
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/stmadb-portal-be:latest
+
+            # Pull image frontend terbaru dari Docker Hub
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/stmadb-portal-fe:latest
+
+            # Jalankan ulang container dengan gambar baru
+            docker-compose up -d --remove-orphans
+
+            # Hapus image lama yang tidak terpakai
+            docker image prune -f
