@@ -36,6 +36,8 @@ jobs:
           file: ./stmadb-portal-fe/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/stmadb-portal-fe:latest
+          build-args: |
+          NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
 
   deploy:
     needs: build-and-push # Jalankan job ini setelah build-and-push selesai

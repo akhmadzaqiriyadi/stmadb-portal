@@ -49,6 +49,8 @@ services:
       - "3000:3000"
     env_file:
       - ./stmadb-portal-fe/.env
+    environment:
+      - NEXT_PUBLIC_API_URL=https://api.simantap.smkn1adw.sch.id
     restart: unless-stopped
     networks:
       - stmadb-net
